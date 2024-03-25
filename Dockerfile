@@ -44,7 +44,8 @@ RUN pip3 install ultralytics
 
 ############################################
 
-FROM overlay as develop
+# We push the overlay images to DockerHub naming "hive:base"
+FROM hive:base as develop
 RUN mkdir yolov8 && chmod -R +x yolov8 && cd yolov8 && \
   yolo segment predict model=yolov8n-seg.pt source='https://ultralytics.com/images/bus.jpg' show=True
 RUN mkdir -p ros2_ws/src && chmod -R +x ./ros2_ws
@@ -53,4 +54,5 @@ RUN cd src && git clone https://github.com/mgonzs13/yolov8_ros.git \
   && pip3 install -r yolov8_ros/requirements.txt
 RUN pip3 install -U pytest==7.2 && pip3 install -U colcon-common-extensions
 
-RUN cd src && git clone https://github.com/BEYOND-thelimit/hive_vision.git
+COPY .. /ros2_ws/src/hive_vision
+RUN ls --recursive /ros2_ws/src/hive_vision/
