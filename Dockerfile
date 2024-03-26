@@ -1,4 +1,4 @@
-# CUDA Version 11.3.1
+# CUDA Version 12.1.0
 
 # Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 
