@@ -7,7 +7,7 @@ We provide Dockerfile. There are some prerequisites to build successfully.
 - X11 forwarding
 - Add docker in sudo group
 
-Just build image using below command.
+Just build image using below command. It takes about 15-20 minutes.
 ```
 docker build -t [YourImageName:TAG] .
 ```
