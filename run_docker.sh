@@ -8,6 +8,7 @@ DOCKER_VOLUMES="
 --volume="${XAUTHORITY:-$HOME/.Xauthority}:/root/.Xauthority" \
 --volume="/dev/video0:/dev/video0" \
 --volume="/dev/video2:/dev/video2" \
+--volume="$(pwd):/ros2_ws/src/hive_vision" \
 "
 DOCKER_ENV_VARS="
 --env="DISPLAY" \
