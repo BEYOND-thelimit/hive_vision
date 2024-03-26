@@ -44,8 +44,7 @@ RUN pip3 install ultralytics
 
 ############################################
 
-# We push the overlay images to DockerHub naming "hive:base"
-FROM hive:base as develop
+FROM overlay as develop
 RUN mkdir yolov8 && chmod -R +x yolov8 && cd yolov8 && \
   yolo segment predict model=yolov8n-seg.pt source='https://ultralytics.com/images/bus.jpg' show=True
 RUN mkdir -p ros2_ws/src && chmod -R +x ./ros2_ws
