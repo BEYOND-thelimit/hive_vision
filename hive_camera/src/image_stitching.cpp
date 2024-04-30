@@ -9,9 +9,8 @@
 #include "opencv2/features2d.hpp"
 #include "opencv2/calib3d.hpp"
 
-#define SHOW_FEATURE 0
 #define SHOW_MATCH 1
-#define STITCHING_DEBUG 0
+#define STITCHING_MODE 1 // 0: feature matching, 1: concatenate
 
 class ImageStitcher : public rclcpp::Node
 {
@@ -67,74 +66,72 @@ void ImageStitcher::syn_callback(const sensor_msgs::msg::Image::SharedPtr &camer
   cv::Mat cvimg_from_camera1 = cv_ptr1->image;
   cv::Mat cvimg_from_camera2 = cv_ptr2->image;
 
-  // feature extraction
-  cv::Ptr<cv::Feature2D> detector = cv::ORB::create();
-  std::vector<cv::KeyPoint> keypoints1, keypoints2;
-  cv::Mat descriptors1, descriptors2;
-  detector->detectAndCompute(cvimg_from_camera1, cv::noArray(), keypoints1, descriptors1);
-  detector->detectAndCompute(cvimg_from_camera2, cv::noArray(), keypoints2, descriptors2);
-  if (SHOW_FEATURE)
+  if (STITCHING_MODE)
   {
-    cv::Mat img_keypoints1, img_keypoints2;
-    cv::drawKeypoints(cvimg_from_camera1, keypoints1, img_keypoints1);
-    cv::drawKeypoints(cvimg_from_camera2, keypoints2, img_keypoints2);
-    cv::imshow("Keypoints1", img_keypoints1);
-    cv::imshow("Keypoints2", img_keypoints2);
-    RCLCPP_INFO(this->get_logger(), "Keypoints1: %ld, Keypoints2: %ld", keypoints1.size(), keypoints2.size());
-    cv::waitKey(1);
-    if (cv::waitKey(1) == 27)
-    {
-      RCLCPP_INFO(this->get_logger(), "ESC key is pressed by user");
-      return;
-    }
+    // 이미지 이어붙이기
+    cv::Mat combined_image(cvimg_from_camera1.rows + cvimg_from_camera2.rows, cvimg_from_camera2.cols, cvimg_from_camera1.type());
+    cvimg_from_camera1.copyTo(combined_image(cv::Rect(0, 0, cvimg_from_camera1.cols, cvimg_from_camera1.rows)));
+    cvimg_from_camera2.copyTo(combined_image(cv::Rect(0, cvimg_from_camera1.rows, cvimg_from_camera2.cols, cvimg_from_camera2.rows)));
+    sensor_msgs::msg::Image::SharedPtr combined_image_msg = cv_bridge::CvImage(camera1_msg->header, sensor_msgs::image_encodings::BGR8, combined_image).toImageMsg();
+    combined_image_->publish(*combined_image_msg);
   }
+  else
+  {
+    // feature extraction
+    cv::Ptr<cv::Feature2D> detector = cv::ORB::create();
+    std::vector<cv::KeyPoint> keypoints1, keypoints2;
+    cv::Mat descriptors1, descriptors2;
+    detector->detectAndCompute(cvimg_from_camera1, cv::noArray(), keypoints1, descriptors1);
+    detector->detectAndCompute(cvimg_from_camera2, cv::noArray(), keypoints2, descriptors2);
 
-  // feature matching with good matching
-  cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
-  std::vector<cv::DMatch> matches;
-  matcher->match(descriptors1, descriptors2, matches);
-  std::sort(matches.begin(), matches.end());
-  int num_good_matches = matches.size() * 0.05; // hand-crafted threshold
-  std::vector<cv::DMatch> good_matches(matches.begin(), matches.begin() + num_good_matches);
-  if (SHOW_MATCH)
-  {
-    cv::Mat img_matches;
-    cv::drawMatches(cvimg_from_camera1, keypoints1, cvimg_from_camera2, keypoints2, good_matches, img_matches);
-    cv::imshow("Matches", img_matches);
-    //RCLCPP_INFO(this->get_logger(), "Matches: %ld", good_matches.size());
-    cv::waitKey(1);
-    if (cv::waitKey(1) == 27)
+    // feature matching with good matching
+    cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
+    std::vector<cv::DMatch> matches;
+    matcher->match(descriptors1, descriptors2, matches);
+    std::sort(matches.begin(), matches.end());
+    int num_good_matches = matches.size() * 0.05; // hand-crafted threshold
+    std::vector<cv::DMatch> good_matches(matches.begin(), matches.begin() + num_good_matches);
+    if (SHOW_MATCH)
     {
-      RCLCPP_INFO(this->get_logger(), "ESC key is pressed by user");
-      return;
+      cv::Mat img_matches;
+      cv::drawMatches(cvimg_from_camera1, keypoints1, cvimg_from_camera2, keypoints2, good_matches, img_matches);
+      cv::imshow("Matches", img_matches);
+      //RCLCPP_INFO(this->get_logger(), "Matches: %ld", good_matches.size());
+      cv::waitKey(1);
+      if (cv::waitKey(1) == 27)
+      {
+        RCLCPP_INFO(this->get_logger(), "ESC key is pressed by user");
+        return;
+      }
     }
-  }
 
-  // homography estimation
-  std::vector<cv::Point2f> pts1;
-  std::vector<cv::Point2f> pts2;
-  for (size_t i = 0; i < good_matches.size(); i++)
-  {
-    pts1.push_back(keypoints1[good_matches[i].queryIdx].pt);
-    pts2.push_back(keypoints2[good_matches[i].trainIdx].pt);
+    // homography estimation
+    std::vector<cv::Point2f> pts1;
+    std::vector<cv::Point2f> pts2;
+    for (size_t i = 0; i < good_matches.size(); i++)
+    {
+      pts1.push_back(keypoints1[good_matches[i].queryIdx].pt);
+      pts2.push_back(keypoints2[good_matches[i].trainIdx].pt);
+    }
+    cv::Mat H_hat = cv::findHomography(pts1, pts2, cv::RANSAC);
+    double homography_threshold = 0.01; // hand-crafted threshold
+    // 회전 행렬이 거의 단위 행렬이고, 스케일이 거의 1인 경우라 가정
+    if (is_first_ && abs(H_hat.at<double>(0, 0) - 1.0) <= homography_threshold
+                  && abs(H_hat.at<double>(1, 1) - 1.0) <= homography_threshold
+                  && abs(H_hat.at<double>(2, 2) - 1.0) <= homography_threshold)
+    {
+      RCLCPP_INFO(this->get_logger(), "Homography is identity matrix");
+      is_first_ = false;
+      H = H_hat.clone();
+      can_stitch_ = true;
+      translation_x = H.at<int>(0, 2);
+      translation_y = H.at<int>(1, 2);
+      std::cout << H << std::endl;
+    }
+    // image stitching
+    //TODO: 이미지 스티칭 코드 작성
   }
-  cv::Mat H_hat = cv::findHomography(pts1, pts2, cv::RANSAC);
-  double homography_threshold = 0.01; // hand-crafted threshold
-  // 회전 행렬이 거의 단위 행렬이고, 스케일이 거의 1인 경우라 가정
-  if (is_first_ && abs(H_hat.at<double>(0, 0) - 1.0) <= homography_threshold
-                && abs(H_hat.at<double>(1, 1) - 1.0) <= homography_threshold
-                && abs(H_hat.at<double>(2, 2) - 1.0) <= homography_threshold)
-  {
-    RCLCPP_INFO(this->get_logger(), "Homography is identity matrix");
-    is_first_ = false;
-    H = H_hat.clone();
-    can_stitch_ = true;
-    translation_x = H.at<int>(0, 2);
-    translation_y = H.at<int>(1, 2);
-    std::cout << H << std::endl;
-  }
-  // image stitching
-  //TODO: 이미지 스티칭 코드 작성
+  
 }
 
 int main(int argc, char **argv)
