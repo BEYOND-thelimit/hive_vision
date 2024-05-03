@@ -157,12 +157,7 @@ void RSImageStitcher::syn_callback(const sensor_msgs::msg::CompressedImage::Shar
   else if (can_stitch_)
   {
     cv::Mat stitching_result_c = stitch_image(cvimg_from_up_cam_c, cvimg_from_bottom_cam_c, H);
-    cv::imshow("Color", stitching_result_c);
-    cv::waitKey(1);
-
     cv::Mat stitching_result_d = stitch_image(cvimg_from_up_cam_d, cvimg_from_bottom_cam_d, H);
-    cv::imshow("Depth", stitching_result_d);
-    cv::waitKey(1);
 
     sensor_msgs::msg::Image::SharedPtr combined_c_msg
                         = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", stitching_result_c).toImageMsg();
