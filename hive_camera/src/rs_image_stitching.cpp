@@ -78,10 +78,11 @@ void RSImageStitcher::syn_callback(const sensor_msgs::msg::CompressedImage::Shar
   cv_bridge::CvImagePtr cv_ptr_d2;
   try
   {
+    // Image Format([color, depth]): [BGR8, 32FC1(gazebo)], [BGR8, 16UC1(realsense)] 
     cv_ptr_c1 = cv_bridge::toCvCopy(up_cam_c_msg, sensor_msgs::image_encodings::BGR8);
     cv_ptr_c2 = cv_bridge::toCvCopy(bottom_cam_c_msg, sensor_msgs::image_encodings::BGR8);
-    cv_ptr_d1 = cv_bridge::toCvCopy(up_cam_d_msg, sensor_msgs::image_encodings::TYPE_16UC1);
-    cv_ptr_d2 = cv_bridge::toCvCopy(bottom_cam_d_msg, sensor_msgs::image_encodings::TYPE_16UC1);
+    cv_ptr_d1 = cv_bridge::toCvCopy(up_cam_d_msg, sensor_msgs::image_encodings::TYPE_32FC1);
+    cv_ptr_d2 = cv_bridge::toCvCopy(bottom_cam_d_msg, sensor_msgs::image_encodings::TYPE_32FC1);
   }
   catch(cv_bridge::Exception &e)
   {
@@ -167,7 +168,7 @@ void RSImageStitcher::syn_callback(const sensor_msgs::msg::CompressedImage::Shar
                         = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", stitching_result_c).toImageMsg();
     combined_c_pub_->publish(*combined_c_msg);
     sensor_msgs::msg::Image::SharedPtr combined_d_msg
-                        = cv_bridge::CvImage(std_msgs::msg::Header(), "16UC1", stitching_result_d).toImageMsg();
+                        = cv_bridge::CvImage(std_msgs::msg::Header(), "32FC1", stitching_result_d).toImageMsg();
     combined_d_pub_->publish(*combined_d_msg);
   }
 }
