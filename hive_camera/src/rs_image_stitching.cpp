@@ -158,7 +158,7 @@ void RSImageStitcher::syn_callback(const sensor_msgs::msg::CompressedImage::Shar
   {
     cv::Mat stitching_result_c = stitch_image(cvimg_from_up_cam_c, cvimg_from_bottom_cam_c, H);
     cv::Mat stitching_result_d = stitch_image(cvimg_from_up_cam_d, cvimg_from_bottom_cam_d, H);
-
+    std::cout << "size" << stitching_result_c.size() << std::endl;
     sensor_msgs::msg::Image::SharedPtr combined_c_msg
                         = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", stitching_result_c).toImageMsg();
     combined_c_pub_->publish(*combined_c_msg);
