@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'mytracking_node = yolov8_ros.mytracking_node:main ',
         ],
     },
 )
