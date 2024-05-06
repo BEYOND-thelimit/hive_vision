@@ -1,5 +1,12 @@
 # hive_vision
 
+## Detection using yolov8
+### Prerequests
+- [ultralytics](https://github.com/ultralytics/ultralytics)
+- [yolov8-ros driver](https://github.com/mgonzs13/yolov8_ros)
+
+Our detection code need above repository.
+
 ## docker
 We provide Dockerfile. There are some prerequisites to build successfully.
 
