@@ -9,7 +9,10 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(message_filters REQUIRED)
+find_package(PCL REQUIRED)
+find_package(pcl_conversions REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(cv_bridge REQUIRED)
 
@@ -19,10 +22,22 @@ ament_target_dependencies(image_stitching_node rclcpp sensor_msgs message_filter
 add_executable(rs_image_stitching_node src/rs_image_stitching.cpp)
 ament_target_dependencies(rs_image_stitching_node rclcpp sensor_msgs message_filters OpenCV cv_bridge)
 
+add_executable(depth_sub src/depth_sub.cpp)
+ament_target_dependencies(depth_sub 
+  rclcpp 
+  std_msgs
+  nav_msgs
+  sensor_msgs 
+  PCL 
+  pcl_conversions 
+  OpenCV
+)
+
 #node
 install(TARGETS
   image_stitching_node
   rs_image_stitching_node
+  depth_sub
   DESTINATION lib/${PROJECT_NAME}
 )
 
