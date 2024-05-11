@@ -16,6 +16,7 @@
 #include <opencv2/imgproc.hpp>
 
 #define SHOW_MATCH 1
+#define FIND_HOMOGRAPHY 1
 
 cv::Mat stitch_image(cv::Mat &img1, cv::Mat &img2, cv::Mat &H);
 
@@ -30,8 +31,6 @@ class RSImageStitcher : public rclcpp::Node
   bool is_first_ = true;
   cv::Mat H;
   bool can_stitch_ = false;
-  int translation_x;
-  int translation_y;
   message_filters::Subscriber<sensor_msgs::msg::CompressedImage> up_cam_c_sub_;
   message_filters::Subscriber<sensor_msgs::msg::CompressedImage> bottom_cam_c_sub_;
   message_filters::Subscriber<sensor_msgs::msg::Image> up_cam_d_sub_;
@@ -53,10 +52,10 @@ class RSImageStitcher : public rclcpp::Node
 };
 
 RSImageStitcher::RSImageStitcher(/* args */) : Node("images_stitcher"),
-                                              up_cam_c_sub_(this, "camera1/image_raw/compressed"),
-                                              bottom_cam_c_sub_(this, "camera2/image_raw/compressed"),
-                                              up_cam_d_sub_(this, "camera1/depth/image_raw"),
-                                              bottom_cam_d_sub_(this, "camera2/depth/image_raw")
+                                              up_cam_c_sub_(this, "camera1/camera1/color/image_raw/compressed"),
+                                              bottom_cam_c_sub_(this, "camera2/camera2/color/image_raw/compressed"),
+                                              up_cam_d_sub_(this, "camera1/camera1/aligned_depth_to_color/image_raw"),
+                                              bottom_cam_d_sub_(this, "camera2/camera2/aligned_depth_to_color/image_raw")
 {
   sync_ = std::make_shared<message_filters::Synchronizer<MySyncPolicy>>(MySyncPolicy(10), up_cam_c_sub_, bottom_cam_c_sub_,up_cam_d_sub_,bottom_cam_d_sub_);
   sync_->registerCallback(&RSImageStitcher::syn_callback,this);
@@ -78,7 +77,7 @@ void RSImageStitcher::syn_callback(const sensor_msgs::msg::CompressedImage::Shar
   cv_bridge::CvImagePtr cv_ptr_d2;
   try
   {
-    // Image Format([color, depth]): [BGR8, 32FC1(gazebo)], [BGR8, 16UC1(realsense)] 
+    // Image Format([color, depth]): [BGR8, 32FC1(gazebo)], [BGR8, 16UC1(realsense)]
     cv_ptr_c1 = cv_bridge::toCvCopy(up_cam_c_msg, sensor_msgs::image_encodings::BGR8);
     cv_ptr_c2 = cv_bridge::toCvCopy(bottom_cam_c_msg, sensor_msgs::image_encodings::BGR8);
     cv_ptr_d1 = cv_bridge::toCvCopy(up_cam_d_msg, sensor_msgs::image_encodings::TYPE_32FC1);
@@ -94,71 +93,76 @@ void RSImageStitcher::syn_callback(const sensor_msgs::msg::CompressedImage::Shar
   cv::Mat cvimg_from_up_cam_d = cv_ptr_d1->image;
   cv::Mat cvimg_from_bottom_cam_d = cv_ptr_d2->image;
 
-  //TODO: 이미지 스티칭 코드 작성
   cv::Mat g_cvimg_from_up_cam_c, g_cvimg_from_bottom_cam_c;
   cv::cvtColor(cvimg_from_up_cam_c, g_cvimg_from_up_cam_c, cv::COLOR_BGR2GRAY);
   cv::cvtColor(cvimg_from_bottom_cam_c, g_cvimg_from_bottom_cam_c, cv::COLOR_BGR2GRAY);
 
-// feature extraction
-  cv::Ptr<cv::Feature2D> detector = cv::ORB::create();
-  std::vector<cv::KeyPoint> keypoints1, keypoints2;
-  cv::Mat descriptors1, descriptors2;
-  detector->detectAndCompute(g_cvimg_from_up_cam_c, cv::noArray(), keypoints1, descriptors1);
-  detector->detectAndCompute(g_cvimg_from_bottom_cam_c, cv::noArray(), keypoints2, descriptors2);
-
-  // feature matching with good matching
-  cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
-  std::vector<cv::DMatch> matches;
-  matcher->match(descriptors1, descriptors2, matches);
-  std::sort(matches.begin(), matches.end());
-  int num_good_matches = matches.size() * 0.05; // hand-crafted threshold
-  std::vector<cv::DMatch> good_matches(matches.begin(), matches.begin() + num_good_matches);
-  if (SHOW_MATCH)
+  if (FIND_HOMOGRAPHY)
   {
-    cv::Mat img_matches;
-    cv::drawMatches(g_cvimg_from_up_cam_c, keypoints1, g_cvimg_from_bottom_cam_c, keypoints2, good_matches, img_matches);
-    cv::imshow("Matches", img_matches);
-    //RCLCPP_INFO(this->get_logger(), "Matches: %ld", good_matches.size());
-    cv::waitKey(1);
-    if (cv::waitKey(1) == 27)
+    // feature extraction
+    cv::Ptr<cv::Feature2D> detector = cv::ORB::create();
+    std::vector<cv::KeyPoint> keypoints1, keypoints2;
+
+    cv::Mat descriptors1, descriptors2;
+    detector->detectAndCompute(g_cvimg_from_up_cam_c, cv::noArray(), keypoints1, descriptors1);
+    detector->detectAndCompute(g_cvimg_from_bottom_cam_c, cv::noArray(), keypoints2, descriptors2);
+
+    // feature matching with good matching
+    cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
+    std::vector<cv::DMatch> matches;
+    matcher->match(descriptors1, descriptors2, matches);
+    std::sort(matches.begin(), matches.end());
+    int num_good_matches = matches.size() * 0.05; // hand-crafted threshold
+    std::vector<cv::DMatch> good_matches(matches.begin(), matches.begin() + num_good_matches);
+    if (SHOW_MATCH)
     {
-      RCLCPP_INFO(this->get_logger(), "ESC key is pressed by user");
-      return;
+      cv::Mat img_matches;
+      cv::drawMatches(g_cvimg_from_up_cam_c, keypoints1, g_cvimg_from_bottom_cam_c, keypoints2, good_matches, img_matches);
+      cv::imshow("Matches", img_matches);
+      //RCLCPP_INFO(this->get_logger(), "Matches: %ld", good_matches.size());
+      cv::waitKey(1);
+      if (cv::waitKey(1) == 27)
+      {
+        RCLCPP_INFO(this->get_logger(), "ESC key is pressed by user");
+        return;
+      }
+    }
+
+    // homography estimation
+    std::vector<cv::Point2f> pts1;
+    std::vector<cv::Point2f> pts2;
+    for (size_t i = 0; i < good_matches.size(); i++)
+    {
+      pts1.push_back(keypoints1[good_matches[i].queryIdx].pt);
+      pts2.push_back(keypoints2[good_matches[i].trainIdx].pt);
+    }
+    cv::Mat H_hat = cv::findHomography(pts2, pts1, cv::RANSAC);
+    double homography_threshold = 0.05; // hand-crafted threshold
+    // 회전 행렬이 거의 단위 행렬이고, 스케일이 거의 1인 경우라 가정
+    if (is_first_ && abs(H_hat.at<double>(0, 0) - 1.0) <= homography_threshold
+                  && abs(H_hat.at<double>(1, 1) - 1.0) <= homography_threshold
+                  && abs(H_hat.at<double>(2, 2) - 1.0) <= homography_threshold)
+    {
+      RCLCPP_INFO(this->get_logger(), "Homography is identity matrix");
+      is_first_ = false;
+      H = H_hat.clone();
+      can_stitch_ = true;
+      std::cout << H << std::endl;
     }
   }
-
-  // homography estimation
-  std::vector<cv::Point2f> pts1;
-  std::vector<cv::Point2f> pts2;
-  for (size_t i = 0; i < good_matches.size(); i++)
+  else
   {
-    pts1.push_back(keypoints1[good_matches[i].queryIdx].pt);
-    pts2.push_back(keypoints2[good_matches[i].trainIdx].pt);
-  }
-  cv::Mat H_hat = cv::findHomography(pts2, pts1, cv::RANSAC);
-  double homography_threshold = 0.05; // hand-crafted threshold
-  // 회전 행렬이 거의 단위 행렬이고, 스케일이 거의 1인 경우라 가정
-  if (is_first_ && abs(H_hat.at<double>(0, 0) - 1.0) <= homography_threshold
-                && abs(H_hat.at<double>(1, 1) - 1.0) <= homography_threshold
-                && abs(H_hat.at<double>(2, 2) - 1.0) <= homography_threshold)
-  {
-    RCLCPP_INFO(this->get_logger(), "Homography is identity matrix");
-    is_first_ = false;
-    H = H_hat.clone();
+    cv::Mat known_H = (cv::Mat_<float>(3, 3) << 0.9551784619509351, -0.007564144883434254, 7.500516037138702,
+                                                -0.04856042803176092, 0.9687918280141291, 174.508854075232,
+                                                -6.663614475209736e-05, -2.420052125906546e-05, 1);
+    H = known_H.clone();
     can_stitch_ = true;
-    translation_x = H.at<int>(0, 2);
-    translation_y = H.at<int>(1, 2);
-    std::cout << H << std::endl;
   }
-  else if (!can_stitch_)
-  {
-    std::cout << H_hat << std::endl;
-  }
-  else if (can_stitch_)
+
+  if (can_stitch_)
   {
     cv::Mat stitching_result_c = stitch_image(cvimg_from_up_cam_c, cvimg_from_bottom_cam_c, H);
     cv::Mat stitching_result_d = stitch_image(cvimg_from_up_cam_d, cvimg_from_bottom_cam_d, H);
-    std::cout << "size" << stitching_result_c.size() << std::endl;
     sensor_msgs::msg::Image::SharedPtr combined_c_msg
                         = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", stitching_result_c).toImageMsg();
     combined_c_pub_->publish(*combined_c_msg);
