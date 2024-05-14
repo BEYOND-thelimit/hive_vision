@@ -40,7 +40,7 @@ class MyTrackingNode(Node):
         # self.cy = camera_info_msg.k[5]
 
     def publish_detection_info(
-        self, 
+        self,
         tracked_detections_msg: DetectionArray
         ) -> None:
 
@@ -73,7 +73,7 @@ def main():
 
     node.create_subscription(
         Image,
-        'camera/camera/depth/image_rect_raw',
+        'camera/camera/aligned_depth_to_color/image_raw',
         node.depth_callback,
         10
     )
