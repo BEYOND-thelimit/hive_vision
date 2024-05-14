@@ -28,16 +28,16 @@ class MyTrackingNode(Node):
 
     def camera_info_callback(self, camera_info_msg: CameraInfo):
         # Camera intrinsic parameters of D435i which we use
-        self.fx = 607.0402221679688
-        self.fy = 606.7127685546875
-        self.cx = 311.1837158203125
-        self.cy = 251.5524139404297
+        # self.fx = 607.0402221679688
+        # self.fy = 606.7127685546875
+        # self.cx = 311.1837158203125
+        # self.cy = 251.5524139404297
 
         # Camera intrinsic parameters from camera_info_msg
-        # self.fx = camera_info_msg.k[0]
-        # self.fy = camera_info_msg.k[4]
-        # self.cx = camera_info_msg.k[2]
-        # self.cy = camera_info_msg.k[5]
+        self.fx = camera_info_msg.k[0]
+        self.fy = camera_info_msg.k[4]
+        self.cx = camera_info_msg.k[2]
+        self.cy = camera_info_msg.k[5]
 
     def publish_detection_info(
         self,
