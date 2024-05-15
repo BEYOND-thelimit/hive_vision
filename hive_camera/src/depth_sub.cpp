@@ -38,16 +38,12 @@ public:
 
     publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("/map", 10);
     timer_ = this->create_wall_timer(std::chrono::milliseconds(1000), std::bind(&DepthMapHandler::publishMap, this));
-    
-    image_width = 640;
-    image_height = 480;
-    map_matrix = cv::Mat::zeros(image_height, image_width, CV_16UC1);
   }
 
 private:
   int image_width=640;
   int image_height=480;
-  cv::Mat map_matrix;
+  cv::Mat map_matrix = cv::Mat::zeros(image_height, image_width, CV_16UC1);
 
   int robot1_value_x;
   int robot1_value_y;
