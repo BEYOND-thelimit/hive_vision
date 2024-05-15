@@ -19,6 +19,9 @@ find_package(cv_bridge REQUIRED)
 add_executable(rs_image_stitching_node src/rs_image_stitching.cpp)
 ament_target_dependencies(rs_image_stitching_node rclcpp sensor_msgs message_filters OpenCV cv_bridge)
 
+add_executable(rs_image_concatenating_node src/rs_image_concatenate.cpp)
+ament_target_dependencies(rs_image_concatenating_node rclcpp sensor_msgs message_filters OpenCV cv_bridge)
+
 add_executable(depth_sub src/depth_sub.cpp)
 ament_target_dependencies(depth_sub 
   rclcpp 
@@ -33,6 +36,7 @@ ament_target_dependencies(depth_sub
 #node
 install(TARGETS
   rs_image_stitching_node
+  rs_image_concatenating_node
   depth_sub
   DESTINATION lib/${PROJECT_NAME}
 )
