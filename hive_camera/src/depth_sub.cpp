@@ -21,12 +21,20 @@ public:
   DepthMapHandler() : Node("depth_map")
   {
     depth_image_subscription_ = create_subscription<sensor_msgs::msg::Image>(
-    "/camera/camera/depth/image_rect_raw", 10,
+    "/camera/camera/aligned_depth_to_color/image_raw", 10,
     std::bind(&DepthMapHandler::depthImageCallback, this, std::placeholders::_1));
 
     robot1_odom_subscription_ = create_subscription<std_msgs::msg::Int16MultiArray>(
     "robot1/grid_odom", 10,
     std::bind(&DepthMapHandler::robot1OdomCallback, this, std::placeholders::_1));
+
+    robot2_odom_subscription_ = create_subscription<std_msgs::msg::Int16MultiArray>(
+    "robot2/grid_odom", 10,
+    std::bind(&DepthMapHandler::robot2OdomCallback, this, std::placeholders::_1));
+
+    robot3_odom_subscription_ = create_subscription<std_msgs::msg::Int16MultiArray>(
+    "robot3/grid_odom", 10,
+    std::bind(&DepthMapHandler::robot3OdomCallback, this, std::placeholders::_1));
 
     publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("/map", 10);
     timer_ = this->create_wall_timer(std::chrono::milliseconds(1000), std::bind(&DepthMapHandler::publishMap, this));
@@ -37,16 +45,16 @@ public:
   }
 
 private:
-  int image_width=848;
+  int image_width=640;
   int image_height=480;
   cv::Mat map_matrix;
 
   int robot1_value_x;
   int robot1_value_y;
-  int robot2_value_x=150;
-  int robot2_value_y=460;
-  int robot3_value_x=300;
-  int robot3_value_y=460;
+  int robot2_value_x;
+  int robot2_value_y;
+  int robot3_value_x;
+  int robot3_value_y;
 
   void robot1OdomCallback(const std_msgs::msg::Int16MultiArray::SharedPtr msg)
   {
@@ -60,7 +68,32 @@ private:
       RCLCPP_ERROR(this->get_logger(), "Received invalid robot1 odom data");
     }
   }
-  
+
+  void robot2OdomCallback(const std_msgs::msg::Int16MultiArray::SharedPtr msg)
+  {
+    if (msg->data.size() >= 2)
+    {
+      robot2_value_x = msg->data[0];
+      robot2_value_y = msg->data[1];
+    }
+    else
+    {
+      RCLCPP_ERROR(this->get_logger(), "Received invalid robot2 odom data");
+    }
+  }
+
+  void robot3OdomCallback(const std_msgs::msg::Int16MultiArray::SharedPtr msg)
+  {
+    if (msg->data.size() >= 2)
+    {
+      robot3_value_x = msg->data[0];
+      robot3_value_y = msg->data[1];
+    }
+    else
+    {
+      RCLCPP_ERROR(this->get_logger(), "Received invalid robot3 odom data");
+    }
+  } 
 
   void depthImageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
   {
@@ -213,6 +246,8 @@ private:
   }
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr depth_image_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr robot1_odom_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr robot2_odom_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr robot3_odom_subscription_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr publisher_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
