@@ -31,6 +31,7 @@ ament_target_dependencies(depth_sub
   PCL 
   pcl_conversions 
   OpenCV
+  cv_bridge
 )
 
 #node
@@ -40,6 +41,13 @@ install(TARGETS
   depth_sub
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# Folder
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
