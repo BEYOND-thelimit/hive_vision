@@ -15,7 +15,7 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 
-#define SHOW_MATCH 1
+#define SHOW_MATCH 0
 #define FIND_HOMOGRAPHY 1
 
 cv::Mat stitch_image(cv::Mat &img1, cv::Mat &img2, cv::Mat &H);
@@ -112,7 +112,7 @@ void RSImageStitcher::syn_callback(const sensor_msgs::msg::CompressedImage::Shar
     std::vector<cv::DMatch> matches;
     matcher->match(descriptors1, descriptors2, matches);
     std::sort(matches.begin(), matches.end());
-    int num_good_matches = matches.size() * 0.05; // hand-crafted threshold
+    int num_good_matches = matches.size() * 0.04; // hand-crafted threshold
     std::vector<cv::DMatch> good_matches(matches.begin(), matches.begin() + num_good_matches);
     if (SHOW_MATCH)
     {
@@ -137,7 +137,7 @@ void RSImageStitcher::syn_callback(const sensor_msgs::msg::CompressedImage::Shar
       pts2.push_back(keypoints2[good_matches[i].trainIdx].pt);
     }
     cv::Mat H_hat = cv::findHomography(pts2, pts1, cv::RANSAC);
-    double homography_threshold = 0.05; // hand-crafted threshold
+    double homography_threshold = 0.03; // hand-crafted threshold
     // 회전 행렬이 거의 단위 행렬이고, 스케일이 거의 1인 경우라 가정
     if (is_first_ && abs(H_hat.at<double>(0, 0) - 1.0) <= homography_threshold
                   && abs(H_hat.at<double>(1, 1) - 1.0) <= homography_threshold
@@ -148,6 +148,11 @@ void RSImageStitcher::syn_callback(const sensor_msgs::msg::CompressedImage::Shar
       H = H_hat.clone();
       can_stitch_ = true;
       std::cout << H << std::endl;
+    }
+    else if (is_first_)
+    {
+      std::cout << H_hat << std::endl;
+      std::cout << "-----------------" << std::endl;
     }
   }
   else

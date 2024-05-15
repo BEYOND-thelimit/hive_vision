@@ -95,7 +95,6 @@ def generate_launch_description():
         package="hive_detection",  # 패키지 이름 확인
         executable="hive_tracking_node",  # 실행 파일 이름
         name="hive_tracking_node",
-        namespace=namespace,  # 네임스페이스 사용
         parameters=[{
             "model": model,
             "tracker": tracker,
@@ -105,6 +104,8 @@ def generate_launch_description():
             "image_reliability": image_reliability
         }],
         remappings=[
+            ("tracking", "hive_yolo/tracking"),
+            ("detection_info", "hive_yolo/detection_info"),
             ("camera/camera/color/image_raw", input_image_topic),
             ("camera/camera/depth/image_rect_raw", input_depth_image_topic),
         ]
