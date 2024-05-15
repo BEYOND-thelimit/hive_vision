@@ -87,7 +87,7 @@ def main():
 
     node.create_subscription(
         CameraInfo,
-        '/camera/camera/aligned_depth_to_color/camera_info',
+        'camera/camera/aligned_depth_to_color/camera_info',
         node.camera_info_callback,
         10
     )
