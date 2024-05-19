@@ -112,7 +112,7 @@ private:
       for (int x = 0; x < image_width; ++x) {// depth 이미지에서 해당 픽셀의 z 값 가져오기 
         float z_value = depth_image.at<float>(y, x); 
         
-        if (((z_value/1000) < 2.3) and ((z_value/1000) != 0) ) {// z 값이 2.3보다 작으면 행렬의 해당 위치를 1로 설정 0값은 튀는 값이므로 뺴줌
+        if (((z_value/1000) < 2.7) and ((z_value/1000) != 0) ) {// z 값이 2.3보다 작으면 행렬의 해당 위치를 1로 설정 0값은 튀는 값이므로 뺴줌
             depth_matrix.at<uchar>(y, x) = 255;
             // RCLCPP_INFO(this->get_logger(), "z_value: %f", z_value/1000);
         }
