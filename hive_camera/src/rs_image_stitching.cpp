@@ -1,5 +1,4 @@
 #include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/compressed_image.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/image_encodings.hpp"
 #include "message_filters/subscriber.h"
@@ -31,29 +30,29 @@ class RSImageStitcher : public rclcpp::Node
   bool is_first_ = true;
   cv::Mat H;
   bool can_stitch_ = false;
-  message_filters::Subscriber<sensor_msgs::msg::CompressedImage> up_cam_c_sub_;
-  message_filters::Subscriber<sensor_msgs::msg::CompressedImage> bottom_cam_c_sub_;
+  message_filters::Subscriber<sensor_msgs::msg::Image> up_cam_c_sub_;
+  message_filters::Subscriber<sensor_msgs::msg::Image> bottom_cam_c_sub_;
   message_filters::Subscriber<sensor_msgs::msg::Image> up_cam_d_sub_;
   message_filters::Subscriber<sensor_msgs::msg::Image> bottom_cam_d_sub_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr combined_c_pub_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr combined_d_pub_;
   // 동기화 정책 타입 추가
-  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::CompressedImage,
-                                                          sensor_msgs::msg::CompressedImage,
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Image,
+                                                          sensor_msgs::msg::Image,
                                                           sensor_msgs::msg::Image,
                                                           sensor_msgs::msg::Image> MySyncPolicy;
   // Synchronizer 객체에 대한 포인터 선언
   std::shared_ptr<message_filters::Synchronizer<MySyncPolicy>> sync_;
 
-  void syn_callback(const sensor_msgs::msg::CompressedImage::SharedPtr &up_cam_c_msg,
-                    const sensor_msgs::msg::CompressedImage::SharedPtr &bottom_cam_c_msg,
+  void syn_callback(const sensor_msgs::msg::Image::SharedPtr &up_cam_c_msg,
+                    const sensor_msgs::msg::Image::SharedPtr &bottom_cam_c_msg,
                     const sensor_msgs::msg::Image::SharedPtr &up_cam_d_msg,
                     const sensor_msgs::msg::Image::SharedPtr &bottom_cam_d_msg);
 };
 
 RSImageStitcher::RSImageStitcher(/* args */) : Node("images_stitcher"),
-                                              up_cam_c_sub_(this, "camera1/camera1/color/image_raw/compressed"),
-                                              bottom_cam_c_sub_(this, "camera2/camera2/color/image_raw/compressed"),
+                                              up_cam_c_sub_(this, "camera1/camera1/color/image_raw"),
+                                              bottom_cam_c_sub_(this, "camera2/camera2/color/image_raw"),
                                               up_cam_d_sub_(this, "camera1/camera1/aligned_depth_to_color/image_raw"),
                                               bottom_cam_d_sub_(this, "camera2/camera2/aligned_depth_to_color/image_raw")
 {
@@ -66,8 +65,8 @@ RSImageStitcher::RSImageStitcher(/* args */) : Node("images_stitcher"),
 RSImageStitcher::~RSImageStitcher()
 {
 }
-void RSImageStitcher::syn_callback(const sensor_msgs::msg::CompressedImage::SharedPtr &up_cam_c_msg,
-                    const sensor_msgs::msg::CompressedImage::SharedPtr &bottom_cam_c_msg,
+void RSImageStitcher::syn_callback(const sensor_msgs::msg::Image::SharedPtr &up_cam_c_msg,
+                    const sensor_msgs::msg::Image::SharedPtr &bottom_cam_c_msg,
                     const sensor_msgs::msg::Image::SharedPtr &up_cam_d_msg,
                     const sensor_msgs::msg::Image::SharedPtr &bottom_cam_d_msg)
 {
