@@ -87,7 +87,7 @@ def generate_launch_description():
             "image_reliability": image_reliability,
         }],
         remappings=[
-            ("camera/rgb/image_raw", input_image_topic),
+            ("image_raw", input_image_topic),
             ("detections", "hive_yolo/detections")]
     )
 
