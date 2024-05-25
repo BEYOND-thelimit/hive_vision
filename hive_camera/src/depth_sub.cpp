@@ -33,9 +33,9 @@ public:
     robot3_odom_subscription_ = create_subscription<std_msgs::msg::Int16MultiArray>(
     "robot3/grid_odom", 10,
     std::bind(&DepthMapHandler::robot3OdomCallback, this, std::placeholders::_1));
-
-    publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("/map", 10);
-    timer_ = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&DepthMapHandler::publishMap, this));
+    auto qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+    publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("/map", qos);
+    //timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&DepthMapHandler::publishMap, this));
   }
 
 private:
@@ -110,7 +110,7 @@ private:
       for (int x = 0; x < image_width; ++x) {// depth 이미지에서 해당 픽셀의 z 값 가져오기 
         float z_value = depth_image.at<float>(y, x); 
         
-        if (((z_value/1000) < 2.7) and ((z_value/1000) != 0) ) {// z 값이 2.3보다 작으면 행렬의 해당 위치를 1로 설정 0값은 튀는 값이므로 뺴줌
+        if (((z_value/1000) < 2.705) and ((z_value/1000) != 0) ) {// z 값이 2.3보다 작으면 행렬의 해당 위치를 1로 설정 0값은 튀는 값이므로 뺴줌
             depth_matrix.at<uchar>(y, x) = 255;
             // RCLCPP_INFO(this->get_logger(), "z_value: %f", z_value/1000);
         }
@@ -119,13 +119,16 @@ private:
         }
       }
     }
-    cv::Mat k_e = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+    cv::Mat k_e = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
     cv::erode(depth_matrix, depth_matrix, k_e);//팽창 연산 적용
+    
+    cv::Mat k_d = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(20, 20));
+    cv::dilate(depth_matrix, depth_matrix, k_d);
     
     cv::imshow("Depth Image_0", depth_matrix);
 
     cv::Mat labels, stats, centroids;
-    cv::connectedComponentsWithStats(depth_matrix, labels, stats, centroids,CV_32S);
+    cv::connectedComponentsWithStats(depth_matrix, labels, stats, centroids, CV_32S);
     cv::Mat labels_8uc1;
     labels.convertTo(labels_8uc1, CV_8UC1);
     
@@ -215,15 +218,28 @@ private:
     cv::Mat k = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(50, 50));
     cv::dilate(map_matrix, map_matrix, k);//팽창 연산 적용
     
-    map_matrix.at<unsigned char>(robot1_value_y, robot1_value_x) = 2;
+    //map_matrix.at<unsigned char>(robot1_value_y, robot1_value_x) = 2;
     map_matrix.at<unsigned char>(robot2_value_y, robot2_value_x) = 3;
-    map_matrix.at<unsigned char>(robot3_value_y, robot3_value_x) = 4;
+    //map_matrix.at<unsigned char>(robot3_value_y, robot3_value_x) = 4;
+    auto occupancy_grid_msg = std::make_shared<nav_msgs::msg::OccupancyGrid>();
+    occupancy_grid_msg->info.width = image_width;
+    occupancy_grid_msg->info.height = image_height;
+    occupancy_grid_msg->info.resolution = 1.0; // 임의의 해상도 설정 각 셀마다 1M*1M라는 의미
+    occupancy_grid_msg->data.resize(image_width * image_height);
+    
+    for (int i = 0; i < map_matrix.rows * map_matrix.cols; ++i){
+      occupancy_grid_msg->data[i] = map_matrix.data[i];
+    } 
+    publisher_->publish(*occupancy_grid_msg);
 
+    cv::threshold(map_matrix, map_matrix, 0, 255, cv::THRESH_BINARY); // 최종 맵이 잘 나타나는 지 확인용 이미지
+    cv::imshow("Depth Image_4", map_matrix);
     cv::waitKey(1);
   }
-  
+  /*
   void publishMap()
   {
+ 
     auto occupancy_grid_msg = std::make_shared<nav_msgs::msg::OccupancyGrid>();
     occupancy_grid_msg->info.width = image_width;
     occupancy_grid_msg->info.height = image_height;
@@ -238,12 +254,13 @@ private:
     cv::threshold(map_matrix, map_matrix, 0, 255, cv::THRESH_BINARY); // 최종 맵이 잘 나타나는 지 확인용 이미지
     cv::imshow("Depth Image_4", map_matrix);
   }
+  */
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr depth_image_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr robot1_odom_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr robot2_odom_subscription_;
   rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr robot3_odom_subscription_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr publisher_;
-  rclcpp::TimerBase::SharedPtr timer_;
+  //rclcpp::TimerBase::SharedPtr timer_;
 };
 
 
