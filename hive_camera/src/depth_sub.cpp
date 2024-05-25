@@ -44,6 +44,7 @@ private:
   int image_width=640;
   int image_height=480;
   cv::Mat map_matrix = cv::Mat::zeros(image_height, image_width, CV_16UC1);
+  cv::Mat depth_matrix = cv::Mat::zeros(image_height, image_width, CV_8UC1);
 
   int robot1_value_x;
   int robot1_value_y;
@@ -106,13 +107,13 @@ private:
 
     // OpenCV 이미지를 사용하여 작업을 수행
     cv::Mat depth_image = cv_ptr->image;
-    cv::Mat depth_matrix = cv::Mat::zeros(image_height, image_width, CV_8UC1);
+    
 
     for (int y = 0; y < image_height; ++y) {
       for (int x = 0; x < image_width; ++x) {// depth 이미지에서 해당 픽셀의 z 값 가져오기 
         float z_value = depth_image.at<float>(y, x); 
         
-        if (((z_value/1000) < 2.7) and ((z_value/1000) != 0) ) {// z 값이 2.3보다 작으면 행렬의 해당 위치를 1로 설정 0값은 튀는 값이므로 뺴줌
+        if (((z_value/1000) < 2.7008) and ((z_value/1000) != 0) ) {// z 값이 2.3보다 작으면 행렬의 해당 위치를 1로 설정 0값은 튀는 값이므로 뺴줌
             depth_matrix.at<uchar>(y, x) = 255;
             // RCLCPP_INFO(this->get_logger(), "z_value: %f", z_value/1000);
         }
@@ -218,8 +219,8 @@ private:
     cv::dilate(map_matrix, map_matrix, k);//팽창 연산 적용
     
     map_matrix.at<unsigned char>(robot1_value_y, robot1_value_x) = 2;
-    map_matrix.at<unsigned char>(robot2_value_y, robot2_value_x) = 3;
-    map_matrix.at<unsigned char>(robot3_value_y, robot3_value_x) = 4;
+    //map_matrix.at<unsigned char>(robot2_value_y, robot2_value_x) = 3;
+    //map_matrix.at<unsigned char>(robot3_value_y, robot3_value_x) = 4;
 
     cv::waitKey(1);
   }
