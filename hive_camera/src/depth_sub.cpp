@@ -8,9 +8,7 @@
 #include "std_msgs/msg/int16_multi_array.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "sensor_msgs/msg/point_cloud2.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
-#include <pcl_conversions/pcl_conversions.h>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 
@@ -127,7 +125,7 @@ private:
     cv::imshow("Depth Image_0", depth_matrix);
 
     cv::Mat labels, stats, centroids;
-    int num_labels = cv::connectedComponentsWithStats(depth_matrix, labels, stats, centroids,CV_32S);
+    cv::connectedComponentsWithStats(depth_matrix, labels, stats, centroids,CV_32S);
     cv::Mat labels_8uc1;
     labels.convertTo(labels_8uc1, CV_8UC1);
     

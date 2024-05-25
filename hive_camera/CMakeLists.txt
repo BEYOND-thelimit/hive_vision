@@ -11,8 +11,6 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(message_filters REQUIRED)
-find_package(PCL REQUIRED)
-find_package(pcl_conversions REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(cv_bridge REQUIRED)
 
@@ -23,13 +21,11 @@ add_executable(rs_image_concatenating_node src/rs_image_concatenate.cpp)
 ament_target_dependencies(rs_image_concatenating_node rclcpp sensor_msgs message_filters OpenCV cv_bridge)
 
 add_executable(depth_sub src/depth_sub.cpp)
-ament_target_dependencies(depth_sub 
-  rclcpp 
+ament_target_dependencies(depth_sub
+  rclcpp
   std_msgs
   nav_msgs
-  sensor_msgs 
-  PCL 
-  pcl_conversions 
+  sensor_msgs
   OpenCV
   cv_bridge
 )
