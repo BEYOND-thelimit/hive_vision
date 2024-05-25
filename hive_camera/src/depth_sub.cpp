@@ -37,7 +37,7 @@ public:
     std::bind(&DepthMapHandler::robot3OdomCallback, this, std::placeholders::_1));
 
     publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("/map", 10);
-    timer_ = this->create_wall_timer(std::chrono::milliseconds(1000), std::bind(&DepthMapHandler::publishMap, this));
+    timer_ = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&DepthMapHandler::publishMap, this));
   }
 
 private:
