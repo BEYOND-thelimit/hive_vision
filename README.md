@@ -1,19 +1,20 @@
 # hive_vision
+This is our vision system implementation. A camera which we use is on the ceiling.
+For more details, Refer to [our full documentation](https://github.com/BEYOND-thelimit/Capstone-Design-at-HYU).
 
-## Detection and Tracking using custom yolov8
-### Prerequests
+## Prerequests
 - [ultralytics](https://github.com/ultralytics/ultralytics)
 - [our custom yolov8-ros driver](https://github.com/taehun-ryu/yolov8_ros)
 - [realsense2-ros](https://github.com/IntelRealSense/realsense-ros.git)
 
-Our detection code need above repository.
+Our detection code needs the above repository.
 
 ## How to run
 Trun on realsense camera
 ```
 ros2 launch realsense2_camera rs_launch.py
 ```
-**color format should be BGR8!!**
+**Color format should be BGR8!!**
 
 Then, Run YOLOv8
 Our best.pt is in */hive_vision/hive_detection/models/best.pt*
