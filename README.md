@@ -1,5 +1,5 @@
 # hive_vision
-This is our vision system implementation. A camera which we use is on the ceiling.
+This is our vision system implementation. A camera which we use is **on the ceiling**.
 For more details, Refer to [our full documentation](https://github.com/BEYOND-thelimit/Capstone-Design-at-HYU).
 
 ## Prerequests
