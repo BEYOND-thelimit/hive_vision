@@ -10,7 +10,7 @@ For more details, Refer to [our full documentation](https://github.com/BEYOND-th
 Our detection code needs the above repository.
 
 ## How to run
-Trun on realsense camera
+Turn on realsense camera
 ```
 ros2 launch realsense2_camera rs_launch.py
 ```
