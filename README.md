@@ -2,6 +2,24 @@
 This is our vision system implementation. A camera which we use is **on the ceiling**.
 For more details, Refer to [our full documentation](https://github.com/BEYOND-thelimit/Capstone-Design-at-HYU).
 
+---
+
+### ⚠️ License & Patent Notice
+
+> This repository is provided **for non-commercial academic and research use only**.
+> **Commercial use is strictly prohibited** without a separate license agreement.
+
+- This project includes technology that is **patent-pending in South Korea**
+  (Korean Patent Application No. **10-2025-0008102**)
+- If you use this code or its ideas in your research or projects,
+  **you must provide proper attribution** to the original author.
+- **Use of this software or its ideas for commercial purposes is not allowed.**
+
+For commercial licensing inquiries, please contact:
+**[taehun-ryu@gmail.com]**
+
+---
+
 ## Prerequests
 - [ultralytics](https://github.com/ultralytics/ultralytics)
 - [our custom yolov8-ros driver](https://github.com/taehun-ryu/yolov8_ros)
